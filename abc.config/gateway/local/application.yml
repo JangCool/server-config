@@ -1,0 +1,77 @@
+
+#####################################################################
+# eureka 접속 정보
+#####################################################################
+eureka:
+  client:
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8900/eureka
+      
+#####################################################################
+# gateway 서버 구성 정보 및 route 설정
+#####################################################################
+server:
+  port: 9000
+spring:
+  application:
+    name: abcmart-gateway
+  cloud:
+    gateway:
+      routes:
+      - id: backend_route
+        uri: lb://backend
+        predicates:
+        - Path=/**
+        filters:
+        - Hystrix=failCmd
+        - name: Hystrix
+          args:
+            name: fallbackcmd
+            fallbackUri : forward:/main
+
+
+#####################################################################
+# hystrix threadpool 작동 옵션.
+#####################################################################
+hystrix:
+  threadpool:
+   default:
+     coreSize: 100  # Hystrix Thread Pool default size
+     maximumSize: 500  # Hystrix Thread Pool default size
+     keepAliveTimeMinutes: 1
+     allowMaximumSizeToDivergeFromCoreSize: true
+   
+#####################################################################
+# gateway hystrix circuit breaker 설정 
+# 
+# hystrixcommand.hystrix커맨드키.옵션.옵션키:값
+#
+# timeoutInMillisecond = fallback이 작동 할 지연 발생 시간, 기본값 : 1000 (milisecond), 설명 : 설정 시간동안 처리 지연발생시 timeout and 설정한 fallback 로직 수행
+# hystrixcommand.failCmd.execution.isolation.thread.timeoutInMillisecond
+#
+# timeInMilliseconds = 오류 감시 시간, 기본값 : 10000 (milisecond), 설명 : circuit breaker 작동의 기준이 되는 시간 
+# hystrixcommand.failCmd.metrics.rollingStats.timeInMilliseconds
+#
+# requestVolumeThreshold = 10초 동안 호출 횟수 , 기본값 : 20 , 설명 : 10초 동안 19번 호출 하고 19번 실패해도 회로 차단기가(circuit breaker) 작동 하지 않는다
+# hystrixcommand.failcmd.circuitBreaker.requestVolumeThreshold 
+#
+# errorThresholdPercentage = 요청 대비 오류율 , 기본값 : 50 (%) , 설명 : 차단기가 작동하게 될 에러 비율 
+# hystrixcommand.failcmd.circuitBreaker.errorThresholdPercentage  
+#
+# sleepWindowInMilliseconds = 호출 차단 시간, 기본값 : 10000 (milisecond), 설명 : 차단기가 작동하고 난뒤 호출을 차단 하는 시간.
+# hystrixcommand.failCmd.circuitBreaker.sleepWindowInMilliseconds
+#
+#
+# 설명 : gateway 에서 backend 호출시 5초이상 응답이 없다면 fallback을 호출하여 다른 url을 보내거나 응답 결과를 반환한다.
+# 10초 동안에 20번 이상 호출하고 그중 30퍼센트 정도 에러가 발생 할 경우 circuit breaker를 작동한다. 이후 circuit breaker가 작동 한 뒤
+# 5초간 호출을 차단 하고 이후 1번씩 접속 시도하여 서비스가 정상적으로 접속 되면 계속 호출 한다.
+#####################################################################
+
+hystrixcommand.failCmd.execution.isolation.thread.timeoutInMilliseconds: 5000 
+
+hystrixcommand.failCmd.metrics.rollingStats.timeInMilliseconds: 10000
+hystrixcommand.failCmd.circuitBreaker.requestVolumeThreshold: 20
+hystrixcommand.failCmd.circuitBreaker.errorThresholdPercentage: 30
+hystrixcommand.failCmd.circuitBreaker.sleepWindowInMilliseconds: 5000
+        
